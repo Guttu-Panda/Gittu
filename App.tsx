@@ -13,7 +13,7 @@ import AIChat from './components/AIChat.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import PandaGuide from './components/PandaGuide.tsx';
 
-const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string }> = ({ superMode, globalVFX }) => {
+const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string, isDarkMode: boolean }> = ({ superMode, globalVFX, isDarkMode }) => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -27,9 +27,9 @@ const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string }> = 
   
   const emojis = useMemo(() => {
     if (globalVFX === 'hearts') return ['💖', '❤️', '💝', '💕'];
-    if (globalVFX === 'stars') return ['✨', '⭐', '🌟', '💫'];
+    if (globalVFX === 'stars' || isDarkMode) return ['✨', '⭐', '🌟', '💫', '🌙'];
     return superMode ? ['💖', '✨', '🌈', '🦋', '🌸'] : ['☁️', '🤍', '✨'];
-  }, [superMode, globalVFX]);
+  }, [superMode, globalVFX, isDarkMode]);
 
   const particles = useMemo(() => {
     return Array.from({ length: 40 }).map(() => ({
@@ -84,21 +84,29 @@ const App: React.FC = () => {
   const [aiAutopilot, setAiAutopilot] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [aiOnline, setAiOnline] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
 
   const sections = useMemo(() => [
-    { id: 'home', component: <Hero /> },
-    { id: 'journey', component: <Journey /> },
-    { id: 'hug', component: <HugDay /> },
-    { id: 'promises', component: <Promises /> },
-    { id: 'letters', component: <Letters /> },
-    { id: 'fun', component: <Fun /> },
-    { id: 'gallery', component: <Gallery /> },
-    { id: 'final', component: <Final /> }
-  ], []);
+    { id: 'home', component: <Hero isDarkMode={isDarkMode} /> },
+    { id: 'journey', component: <Journey isDarkMode={isDarkMode} /> },
+    { id: 'hug', component: <HugDay isDarkMode={isDarkMode} /> },
+    { id: 'promises', component: <Promises isDarkMode={isDarkMode} /> },
+    { id: 'letters', component: <Letters isDarkMode={isDarkMode} /> },
+    { id: 'fun', component: <Fun isDarkMode={isDarkMode} /> },
+    { id: 'gallery', component: <Gallery isDarkMode={isDarkMode} /> },
+    { id: 'final', component: <Final isDarkMode={isDarkMode} /> }
+  ], [isDarkMode]);
+
+  // Handle Theme Persistence
+  useEffect(() => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   // Check AI Health
   useEffect(() => {
@@ -107,7 +115,6 @@ const App: React.FC = () => {
         const hasKey = await window.aistudio.hasSelectedApiKey();
         setAiOnline(hasKey);
       } else {
-        // Fallback for direct API_KEY injection
         setAiOnline(!!process.env.API_KEY);
       }
     };
@@ -181,14 +188,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`page-deck transition-all duration-1000 ${superMode ? 'bg-[#fff5f8]' : 'bg-[#fdfcfb]'} text-gray-900`}>
-      <FloatingBackground superMode={superMode} globalVFX={globalVFX} />
+    <div className={`page-deck transition-colors duration-1000 ${isDarkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-[#fdfcfb] text-gray-900'}`}>
+      <FloatingBackground superMode={superMode} globalVFX={globalVFX} isDarkMode={isDarkMode} />
 
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 z-[80] flex gap-1 px-6 pt-6">
         {sections.map((_, i) => (
           <div key={i} onClick={() => changePage(i)} className="flex-1 h-full cursor-pointer relative group">
-            <div className={`h-full rounded-full transition-all duration-700 ${i <= activeIdx ? (superMode ? 'bg-pink-400' : 'bg-pink-300') : 'bg-gray-100/30'} shadow-sm`} />
+            <div className={`h-full rounded-full transition-all duration-700 ${i <= activeIdx ? (superMode ? 'bg-pink-400' : (isDarkMode ? 'bg-indigo-400' : 'bg-pink-300')) : (isDarkMode ? 'bg-slate-800' : 'bg-gray-100/30')} shadow-sm`} />
           </div>
         ))}
       </div>
@@ -197,7 +204,7 @@ const App: React.FC = () => {
       <div className="fixed top-8 left-8 z-[90] flex items-center gap-3">
         <div onClick={() => setShowAdmin(true)} className="cursor-pointer group flex items-center gap-2">
           <div className="relative">
-            <Cloud className={`w-8 h-8 transition-all duration-500 ${superMode ? 'text-pink-400' : 'text-blue-200'}`} />
+            <Cloud className={`w-8 h-8 transition-all duration-500 ${superMode ? 'text-pink-400' : (isDarkMode ? 'text-indigo-400' : 'text-blue-200')}`} />
             <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${aiOnline ? 'bg-green-400' : 'bg-red-400'}`} />
           </div>
         </div>
@@ -205,13 +212,13 @@ const App: React.FC = () => {
         {!aiOnline && (
           <button 
             onClick={handleConnectCloud}
-            className="glass px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest text-pink-500 animate-pulse hover:bg-pink-50 transition-colors shadow-sm"
+            className="glass px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest text-pink-500 dark:text-indigo-400 animate-pulse hover:bg-pink-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
           >
             Connect Cloud
           </button>
         )}
 
-        <button onClick={() => setIsMuted(!isMuted)} className="glass p-2.5 rounded-full text-gray-400 hover:text-pink-500 transition-all active:scale-75 shadow-sm">
+        <button onClick={() => setIsMuted(!isMuted)} className="glass p-2.5 rounded-full text-gray-400 hover:text-pink-500 dark:hover:text-indigo-400 transition-all active:scale-75 shadow-sm">
           {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
       </div>
@@ -224,15 +231,15 @@ const App: React.FC = () => {
 
       {/* Navigation Controls */}
       <div className="fixed bottom-10 left-0 w-full z-[90] flex items-center justify-between px-8 pointer-events-none">
-        <button onClick={() => changePage(activeIdx - 1)} disabled={activeIdx === 0 || isTransitioning} className={`glass p-4 rounded-full text-gray-400 hover:text-pink-500 transition-all active:scale-75 pointer-events-auto disabled:opacity-0 ${activeIdx === 0 ? 'invisible' : 'visible'}`}>
+        <button onClick={() => changePage(activeIdx - 1)} disabled={activeIdx === 0 || isTransitioning} className={`glass p-4 rounded-full text-gray-400 hover:text-pink-500 dark:hover:text-indigo-400 transition-all active:scale-75 pointer-events-auto disabled:opacity-0 ${activeIdx === 0 ? 'invisible' : 'visible'}`}>
           <ChevronLeft size={20} />
         </button>
         <div className="flex flex-col items-center">
             <div className="glass px-4 py-1.5 rounded-full mb-4 pointer-events-auto">
-                <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400">Section {activeIdx + 1}</span>
+                <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400 dark:text-slate-500">Section {activeIdx + 1}</span>
             </div>
             {activeIdx < sections.length - 1 && (
-                <button onClick={() => changePage(activeIdx + 1)} className="p-2.5 bg-gray-950 text-white rounded-full shadow-2xl hover:scale-105 hover:bg-black active:scale-90 transition-all pointer-events-auto flex items-center gap-2 pr-4 group">
+                <button onClick={() => changePage(activeIdx + 1)} className={`p-2.5 rounded-full shadow-2xl hover:scale-105 active:scale-90 transition-all pointer-events-auto flex items-center gap-2 pr-4 group ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-950 hover:bg-black text-white'}`}>
                     <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
                         <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
@@ -244,7 +251,7 @@ const App: React.FC = () => {
       </div>
 
       <AIChat aiAutopilot={aiAutopilot} />
-      <PandaGuide activeIdx={activeIdx} />
+      <PandaGuide activeIdx={activeIdx} isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)} />
 
       {showAdmin && (
         <AdminPanel 

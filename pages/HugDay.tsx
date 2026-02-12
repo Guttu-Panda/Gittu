@@ -18,7 +18,11 @@ const decodeAudioData = async (data: Uint8Array, ctx: AudioContext, sampleRate: 
   return buffer;
 };
 
-const HugDay: React.FC = () => {
+interface HugDayProps {
+  isDarkMode: boolean;
+}
+
+const HugDay: React.FC<HugDayProps> = ({ isDarkMode }) => {
   const [isPressing, setIsPressing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -30,7 +34,6 @@ const HugDay: React.FC = () => {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const whisperSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // A list of cute cloud-themed or soft hug GIFs
   const hugGifs = [
     "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Jm09Zw/PHZ7v9tfQu0o0/giphy.gif",
     "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHNwd29yeGdzbmJidmJidmJidmJidmJidmJidmJidmJidmJidmJidmJm09Zw/3M4NpbLCTxBqU/giphy.gif"
@@ -126,7 +129,8 @@ const HugDay: React.FC = () => {
       confetti({
         ...defaults,
         ...opts,
-        particleCount: Math.floor(count * particleRatio)
+        particleCount: Math.floor(count * particleRatio),
+        colors: isDarkMode ? ['#818cf8', '#6366f1'] : ['#fb7185', '#fda4af']
       });
     }
 
@@ -157,15 +161,15 @@ const HugDay: React.FC = () => {
 
   return (
     <div className={`flex flex-col items-center justify-center min-h-[85vh] px-6 text-center py-12 relative transition-all duration-700 ${isPressing ? 'scale-[0.98]' : 'scale-100'}`}>
-      <div className={`fixed inset-0 transition-opacity duration-1000 pointer-events-none z-[-1] ${isPressing ? 'opacity-100' : 'opacity-0'}`}
-           style={{ background: 'radial-gradient(circle at center, #fff7ed 0%, transparent 70%)' }} />
+      <div className={`fixed inset-0 transition-opacity duration-1000 pointer-events-none z-[-1] ${isPressing ? (isDarkMode ? 'opacity-20' : 'opacity-100') : 'opacity-0'}`}
+           style={{ background: isDarkMode ? 'radial-gradient(circle at center, #1e1b4b 0%, transparent 70%)' : 'radial-gradient(circle at center, #fff7ed 0%, transparent 70%)' }} />
       
       <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-1000">
-        <div className="glass inline-block px-6 py-2 rounded-full mb-4 ring-1 ring-pink-100">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.4em] text-pink-400">February 12 • Hug Day</span>
+        <div className={`glass inline-block px-6 py-2 rounded-full mb-4 ring-1 transition-colors duration-500 ${isDarkMode ? 'ring-indigo-500/20' : 'ring-pink-100'}`}>
+            <span className={`text-[10px] font-extrabold uppercase tracking-[0.4em] transition-colors duration-500 ${isDarkMode ? 'text-indigo-400' : 'text-pink-400'}`}>February 12 • Hug Day</span>
         </div>
-        <h2 className="text-4xl md:text-7xl font-romantic text-gray-900 mb-4 tracking-tight">The Warmest Embrace</h2>
-        <p className="text-gray-400 text-sm md:text-xl font-light italic max-w-md mx-auto leading-relaxed">
+        <h2 className={`text-4xl md:text-7xl font-romantic mb-4 tracking-tight transition-colors duration-500 ${isDarkMode ? 'text-indigo-50' : 'text-gray-900'}`}>The Warmest Embrace</h2>
+        <p className={`text-sm md:text-xl font-light italic max-w-md mx-auto leading-relaxed transition-colors duration-500 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
           {isCompleted 
             ? "Hug Delivered. Warmth received? 🫂" 
             : "Sometimes words can't squeeze tight enough. Hold the heart and don't let go."}
@@ -174,14 +178,14 @@ const HugDay: React.FC = () => {
 
       {!isCompleted ? (
         <div className="relative mb-16 select-none group">
-          <div className={`absolute inset-[-20px] rounded-full blur-[40px] transition-all duration-700 ${isPressing ? 'bg-orange-200/40 opacity-100 scale-110' : 'opacity-0 scale-90'}`} />
+          <div className={`absolute inset-[-20px] rounded-full blur-[40px] transition-all duration-700 ${isPressing ? (isDarkMode ? 'bg-indigo-500/20 opacity-100 scale-110' : 'bg-orange-200/40 opacity-100 scale-110') : 'opacity-0 scale-90'}`} />
           
           <svg className="w-64 h-64 md:w-80 md:h-80 transform -rotate-90 relative z-10">
-            <circle cx="50%" cy="50%" r="48%" fill="none" stroke="#f3f4f6" strokeWidth="2" />
+            <circle cx="50%" cy="50%" r="48%" fill="none" stroke={isDarkMode ? "#0f172a" : "#f3f4f6"} strokeWidth="2" />
             <circle
               cx="50%" cy="50%" r="48%"
               fill="none"
-              stroke="#fb923c"
+              stroke={isDarkMode ? "#6366f1" : "#fb923c"}
               strokeWidth="4"
               strokeDasharray="100%"
               strokeDashoffset={`${100 - progress}%`}
@@ -197,27 +201,29 @@ const HugDay: React.FC = () => {
             onTouchStart={startHug}
             onTouchEnd={stopHug}
             className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-60 md:h-60 rounded-full flex flex-col items-center justify-center transition-all duration-500 cursor-pointer shadow-2xl z-20
-              ${isPressing ? 'scale-[1.1] bg-white ring-8 ring-orange-50' : 'scale-100 bg-white hover:shadow-pink-100'}
+              ${isPressing 
+                ? (isDarkMode ? 'scale-[1.1] bg-slate-900 ring-8 ring-indigo-900/40' : 'scale-[1.1] bg-white ring-8 ring-orange-50') 
+                : (isDarkMode ? 'scale-100 bg-slate-900 border border-white/5 hover:shadow-indigo-900/20' : 'scale-100 bg-white hover:shadow-pink-100')}
             `}
           >
             <div className={`transition-all duration-500 ${isPressing ? 'animate-pulse' : ''}`}>
                <Heart 
                  size={isPressing ? 80 : 64} 
-                 className={`transition-all duration-500 ${isPressing ? 'text-pink-500 fill-pink-500' : 'text-pink-100'}`} 
+                 className={`transition-all duration-500 ${isPressing ? (isDarkMode ? 'text-indigo-500 fill-indigo-600' : 'text-pink-500 fill-pink-500') : (isDarkMode ? 'text-slate-800' : 'text-pink-100')}`} 
                />
             </div>
             <div className="mt-4 flex flex-col items-center gap-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
                 {isPressing ? 'Squeezing...' : 'Long Press To Hug'}
               </span>
-              {isPressing && <Volume2 size={12} className="text-orange-400 animate-bounce" />}
+              {isPressing && <Volume2 size={12} className={`${isDarkMode ? 'text-indigo-400' : 'text-orange-400'} animate-bounce`} />}
             </div>
           </div>
 
           {isPressing && Array.from({ length: 6 }).map((_, i) => (
               <div 
                   key={i} 
-                  className="absolute text-pink-300 opacity-50 animate-ping pointer-events-none"
+                  className={`absolute opacity-50 animate-ping pointer-events-none ${isDarkMode ? 'text-indigo-600' : 'text-pink-300'}`}
                   style={{
                       top: `${20 + Math.random() * 60}%`,
                       left: `${20 + Math.random() * 60}%`,
@@ -230,15 +236,14 @@ const HugDay: React.FC = () => {
         </div>
       ) : (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center mb-16 animate-in zoom-in fade-in duration-1000">
-           {/* Hug GIF Container */}
-           <div className="w-full max-w-[300px] aspect-square rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative mb-12 rotate-[-2deg] bg-white group hover:rotate-2 transition-transform duration-500">
+           <div className={`w-full max-w-[300px] aspect-square rounded-[3rem] overflow-hidden border-8 shadow-2xl relative mb-12 rotate-[-2deg] group hover:rotate-2 transition-all duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-white'}`}>
               <img 
                 src={selectedGif.current} 
                 alt="Hug Animation" 
-                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" 
+                className={`w-full h-full object-cover transition-all duration-700 ${isDarkMode ? 'grayscale-[40%] brightness-75 group-hover:grayscale-0 group-hover:brightness-100' : 'grayscale-[20%] group-hover:grayscale-0'}`} 
               />
-              <div className="absolute inset-0 bg-pink-100/10 pointer-events-none"></div>
-              <Heart className="absolute bottom-4 right-4 text-pink-500 fill-pink-500 w-8 h-8 animate-pulse" />
+              <div className={`absolute inset-0 pointer-events-none transition-colors duration-500 ${isDarkMode ? 'bg-indigo-950/20' : 'bg-pink-100/10'}`}></div>
+              <Heart className={`absolute bottom-4 right-4 w-8 h-8 animate-pulse transition-all duration-500 ${isDarkMode ? 'text-indigo-500 fill-indigo-600' : 'text-pink-500 fill-pink-500'}`} />
            </div>
 
            {loadingNote ? (
@@ -247,17 +252,17 @@ const HugDay: React.FC = () => {
                     <span className="tracking-[0.3em] uppercase font-bold">Summoning a hug note...</span>
                 </div>
             ) : hugNote && (
-                <div className="glass p-10 rounded-[3.5rem] relative overflow-hidden group shadow-2xl ring-1 ring-pink-50 w-full">
-                    <div className="absolute -top-4 -right-4 p-8 opacity-5">
-                        <Sparkles size={60} className="text-pink-500" />
+                <div className={`glass p-10 rounded-[3.5rem] relative overflow-hidden group shadow-2xl ring-1 w-full transition-all duration-500 ${isDarkMode ? 'bg-slate-900/60 border-indigo-500/20 ring-indigo-900/10' : 'border-pink-50 ring-pink-50'}`}>
+                    <div className={`absolute -top-4 -right-4 p-8 opacity-5 transition-colors duration-500 ${isDarkMode ? 'text-indigo-500' : 'text-pink-500'}`}>
+                        <Sparkles size={60} />
                     </div>
-                    <p className="text-xl md:text-3xl font-romantic text-gray-800 leading-relaxed italic">
+                    <p className={`text-xl md:text-3xl font-romantic leading-relaxed italic transition-colors duration-500 ${isDarkMode ? 'text-indigo-50' : 'text-gray-800'}`}>
                         "{hugNote}"
                     </p>
                     <div className="mt-8 flex justify-center items-center gap-3">
-                        <div className="w-10 h-px bg-pink-100"></div>
-                        <Heart size={14} className="text-pink-200 fill-pink-200" />
-                        <div className="w-10 h-px bg-pink-100"></div>
+                        <div className={`w-10 h-px transition-colors duration-500 ${isDarkMode ? 'bg-indigo-900' : 'bg-pink-100'}`}></div>
+                        <Heart size={14} className={`transition-all duration-500 ${isDarkMode ? 'text-indigo-700 fill-indigo-900' : 'text-pink-200 fill-pink-200'}`} />
+                        <div className={`w-10 h-px transition-colors duration-500 ${isDarkMode ? 'bg-indigo-900' : 'bg-pink-100'}`}></div>
                     </div>
                 </div>
             )}
