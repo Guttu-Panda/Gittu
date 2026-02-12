@@ -5,6 +5,7 @@ import Hero from './pages/Hero.tsx';
 import Journey from './pages/Journey.tsx';
 import Promises from './pages/Promises.tsx';
 import Letters from './pages/Letters.tsx';
+import PoemPage from './pages/PoemPage.tsx';
 import HugDay from './pages/HugDay.tsx';
 import Fun from './pages/Fun.tsx';
 import Gallery from './pages/Gallery.tsx';
@@ -98,6 +99,7 @@ const App: React.FC = () => {
     { id: 'hug', component: <HugDay isDarkMode={isDarkMode} /> },
     { id: 'promises', component: <Promises isDarkMode={isDarkMode} /> },
     { id: 'letters', component: <Letters isDarkMode={isDarkMode} /> },
+    { id: 'poem', component: <PoemPage isDarkMode={isDarkMode} /> },
     { id: 'fun', component: <Fun isDarkMode={isDarkMode} /> },
     { id: 'gallery', component: <Gallery isDarkMode={isDarkMode} /> },
     { id: 'final', component: <Final isDarkMode={isDarkMode} /> }

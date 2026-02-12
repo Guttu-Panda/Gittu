@@ -18,6 +18,7 @@ const PandaGuide: React.FC<PandaGuideProps> = ({ activeIdx, isDarkMode, onToggle
     "Hold the heart for a squeeze! It vibrates like a real hug! 🐼🫂",
     "Pinky promises are forever! Tap to see why I made them. 🐼💖",
     "I wrote these just for you. Click 'Hear Note' to listen! 🐼💌",
+    "A special poem written just for our 10th June... 🐼📖",
     "Feeling a bit grey? Let's transform your mood! 🐼🪄",
     "Our polaroids! Tap one to read the secret note. 🐼📸",
     "Whatever happens, I'm always in your sky. Love you! 🐼☁️"
