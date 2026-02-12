@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Heart, Cloud, Volume2, VolumeX, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { Heart, Cloud, Volume2, VolumeX, ChevronRight, ChevronLeft, Sparkles, Wifi, WifiOff } from 'lucide-react';
 import Hero from './pages/Hero.tsx';
 import Journey from './pages/Journey.tsx';
 import Promises from './pages/Promises.tsx';
@@ -11,6 +11,7 @@ import Gallery from './pages/Gallery.tsx';
 import Final from './pages/Final.tsx';
 import AIChat from './components/AIChat.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
+import PandaGuide from './components/PandaGuide.tsx';
 
 const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string }> = ({ superMode, globalVFX }) => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -24,28 +25,36 @@ const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string }> = 
   const isMobile = windowWidth < 768;
   const count = isMobile ? (superMode ? 20 : 8) : (superMode ? 40 : 15);
   
-  const getEmojis = () => {
+  const emojis = useMemo(() => {
     if (globalVFX === 'hearts') return ['💖', '❤️', '💝', '💕'];
     if (globalVFX === 'stars') return ['✨', '⭐', '🌟', '💫'];
     return superMode ? ['💖', '✨', '🌈', '🦋', '🌸'] : ['☁️', '🤍', '✨'];
-  };
+  }, [superMode, globalVFX]);
 
-  const emojis = useMemo(getEmojis, [superMode, globalVFX]);
+  const particles = useMemo(() => {
+    return Array.from({ length: 40 }).map(() => ({
+      top: Math.random() * 100,
+      left: Math.random() * 100,
+      duration: 5 + Math.random() * 5,
+      delay: Math.random() * 5,
+      emojiIdx: Math.floor(Math.random() * 100)
+    }));
+  }, []);
   
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {Array.from({ length: count }).map((_, i) => (
+      {particles.slice(0, count).map((p, i) => (
         <div
           key={i}
           className={`absolute text-2xl transition-all duration-1000 ease-in-out ${superMode ? 'opacity-40 scale-125' : 'opacity-20'}`}
           style={{
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            animation: `float ${superMode ? 2 + Math.random() * 2 : 5 + Math.random() * 5}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 5}s`,
+            top: `${p.top}%`,
+            left: `${p.left}%`,
+            animation: `float ${superMode ? p.duration / 2 : p.duration}s ease-in-out infinite`,
+            animationDelay: `${p.delay}s`,
           }}
         >
-          {emojis[i % emojis.length]}
+          {emojis[p.emojiIdx % emojis.length]}
         </div>
       ))}
       {(superMode || globalVFX === 'hearts') && Array.from({ length: 20 }).map((_, i) => (
@@ -71,15 +80,16 @@ const App: React.FC = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [showAdmin, setShowAdmin] = useState(false);
   const [superMode, setSuperMode] = useState(false);
-  const [globalVFX, setGlobalVFX] = useState('default'); // default, hearts, stars
+  const [globalVFX, setGlobalVFX] = useState('default');
   const [aiAutopilot, setAiAutopilot] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [aiOnline, setAiOnline] = useState(false);
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
 
-  const sections = [
+  const sections = useMemo(() => [
     { id: 'home', component: <Hero /> },
     { id: 'journey', component: <Journey /> },
     { id: 'hug', component: <HugDay /> },
@@ -88,33 +98,62 @@ const App: React.FC = () => {
     { id: 'fun', component: <Fun /> },
     { id: 'gallery', component: <Gallery /> },
     { id: 'final', component: <Final /> }
-  ];
+  ], []);
 
-  const startAudio = () => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+  // Check AI Health
+  useEffect(() => {
+    const checkAI = async () => {
+      if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setAiOnline(hasKey);
+      } else {
+        // Fallback for direct API_KEY injection
+        setAiOnline(!!process.env.API_KEY);
+      }
+    };
+    checkAI();
+    const interval = setInterval(checkAI, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleConnectCloud = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setAiOnline(true);
     }
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') ctx.resume();
-    if (oscillatorRef.current) return;
+  };
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 10);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 2);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    oscillatorRef.current = osc;
-    gainRef.current = gain;
+  const startAudio = async () => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+      if (oscillatorRef.current) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 10);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      oscillatorRef.current = osc;
+      gainRef.current = gain;
+    } catch (err) {
+      console.warn("Audio start failed.");
+    }
   };
 
   const stopAudio = () => {
     if (gainRef.current && audioCtxRef.current) {
-      gainRef.current.gain.exponentialRampToValueAtTime(0.0001, audioCtxRef.current.currentTime + 0.5);
+      const ctx = audioCtxRef.current;
+      gainRef.current.gain.cancelScheduledValues(ctx.currentTime);
+      gainRef.current.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
       setTimeout(() => {
         oscillatorRef.current?.stop();
         oscillatorRef.current = null;
@@ -125,7 +164,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isMuted) startAudio();
     else stopAudio();
-    return () => oscillatorRef.current?.stop();
+    return () => {
+        try { oscillatorRef.current?.stop(); } catch(e) {}
+    };
   }, [isMuted]);
 
   const changePage = (newIdx: number) => {
@@ -134,6 +175,8 @@ const App: React.FC = () => {
     setTimeout(() => {
       setActiveIdx(newIdx);
       setIsTransitioning(false);
+      const content = document.querySelector('.page-content');
+      if (content) content.scrollTop = 0;
     }, 500);
   };
 
@@ -141,6 +184,7 @@ const App: React.FC = () => {
     <div className={`page-deck transition-all duration-1000 ${superMode ? 'bg-[#fff5f8]' : 'bg-[#fdfcfb]'} text-gray-900`}>
       <FloatingBackground superMode={superMode} globalVFX={globalVFX} />
 
+      {/* Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 z-[80] flex gap-1 px-6 pt-6">
         {sections.map((_, i) => (
           <div key={i} onClick={() => changePage(i)} className="flex-1 h-full cursor-pointer relative group">
@@ -149,10 +193,24 @@ const App: React.FC = () => {
         ))}
       </div>
 
+      {/* Connection Indicator & Controls */}
       <div className="fixed top-8 left-8 z-[90] flex items-center gap-3">
-        <div onClick={() => setShowAdmin(true)} className="cursor-pointer opacity-20 hover:opacity-100 transition-all active:scale-90">
-          <Cloud className={`w-8 h-8 ${superMode ? 'text-pink-400' : 'text-blue-100'}`} />
+        <div onClick={() => setShowAdmin(true)} className="cursor-pointer group flex items-center gap-2">
+          <div className="relative">
+            <Cloud className={`w-8 h-8 transition-all duration-500 ${superMode ? 'text-pink-400' : 'text-blue-200'}`} />
+            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${aiOnline ? 'bg-green-400' : 'bg-red-400'}`} />
+          </div>
         </div>
+        
+        {!aiOnline && (
+          <button 
+            onClick={handleConnectCloud}
+            className="glass px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest text-pink-500 animate-pulse hover:bg-pink-50 transition-colors shadow-sm"
+          >
+            Connect Cloud
+          </button>
+        )}
+
         <button onClick={() => setIsMuted(!isMuted)} className="glass p-2.5 rounded-full text-gray-400 hover:text-pink-500 transition-all active:scale-75 shadow-sm">
           {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
@@ -164,6 +222,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
+      {/* Navigation Controls */}
       <div className="fixed bottom-10 left-0 w-full z-[90] flex items-center justify-between px-8 pointer-events-none">
         <button onClick={() => changePage(activeIdx - 1)} disabled={activeIdx === 0 || isTransitioning} className={`glass p-4 rounded-full text-gray-400 hover:text-pink-500 transition-all active:scale-75 pointer-events-auto disabled:opacity-0 ${activeIdx === 0 ? 'invisible' : 'visible'}`}>
           <ChevronLeft size={20} />
@@ -185,6 +244,7 @@ const App: React.FC = () => {
       </div>
 
       <AIChat aiAutopilot={aiAutopilot} />
+      <PandaGuide activeIdx={activeIdx} />
 
       {showAdmin && (
         <AdminPanel 
@@ -195,6 +255,8 @@ const App: React.FC = () => {
           setGlobalVFX={setGlobalVFX}
           aiAutopilot={aiAutopilot}
           setAiAutopilot={setAiAutopilot}
+          aiOnline={aiOnline}
+          onReconnect={handleConnectCloud}
         />
       )}
     </div>

@@ -1,10 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { Send, X, Sparkles, Zap, Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
+import { Send, X, Sparkles, Zap, ShieldAlert, CloudOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-// Define a proper interface for messages to avoid type inference issues
 interface Message {
   role: 'user' | 'model' | 'error' | 'admin';
   text: string;
@@ -18,25 +17,36 @@ interface AIChatProps {
 const AIChat: React.FC<AIChatProps> = ({ aiAutopilot }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem('cloudy_chat_logs');
-    return saved ? JSON.parse(saved) : [{ role: 'model', text: 'Hey Megh! ☁️ Ki khobor? Ajke bol ki bolte chas...', timestamp: Date.now() }];
+    try {
+      const saved = localStorage.getItem('cloudy_chat_logs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to parse chat logs from localStorage", e);
+    }
+    return [{ role: 'model', text: 'Hey Megh! ☁️ Ki khobor? Ajke bol ki bolte chas...', timestamp: Date.now() }];
   });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Sync logs with localStorage for Admin to intercept
   useEffect(() => {
-    localStorage.setItem('cloudy_chat_logs', JSON.stringify(messages));
+    try {
+      localStorage.setItem('cloudy_chat_logs', JSON.stringify(messages));
+    } catch (e) {
+      console.error("Failed to save chat logs", e);
+    }
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
 
-  // Listen for Manual Replies from Admin
   useEffect(() => {
     const handleAdminReply = (e: any) => {
       const { text, role } = e.detail;
+      if (!text) return;
       setMessages(prev => [...prev, { role: role || 'model', text, timestamp: Date.now() }]);
       if (role !== 'admin') triggerPositiveVibe();
     };
@@ -57,11 +67,9 @@ const AIChat: React.FC<AIChatProps> = ({ aiAutopilot }) => {
     if (!input.trim() || isTyping) return;
     const userMsg = input;
     setInput('');
-    // Fix: Explicitly type newMessages as Message[] to ensure the 'role' property literal is correctly typed
     const newMessages: Message[] = [...messages, { role: 'user', text: userMsg, timestamp: Date.now() }];
     setMessages(newMessages);
 
-    // If Autopilot is OFF, we don't call Gemini. Admin must reply manually.
     if (!aiAutopilot) {
       setIsTyping(false);
       return;
@@ -69,6 +77,7 @@ const AIChat: React.FC<AIChatProps> = ({ aiAutopilot }) => {
 
     setIsTyping(true);
     try {
+      // Create fresh instance with current key
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -88,7 +97,11 @@ const AIChat: React.FC<AIChatProps> = ({ aiAutopilot }) => {
       if (positiveKeywords.some(k => text.toLowerCase().includes(k))) triggerPositiveVibe();
 
     } catch (error: any) {
-      setMessages(prev => [...prev, { role: 'error', text: "Cloud signal weak... try again? ☁️", timestamp: Date.now() }]);
+      console.error("Chat AI error:", error);
+      if (error.message?.includes("Requested entity was not found") || error.message?.includes("API key not valid")) {
+         if (window.aistudio) await window.aistudio.openSelectKey();
+      }
+      setMessages(prev => [...prev, { role: 'error', text: "Cloud signal weak... check connection in Admin? ☁️", timestamp: Date.now() }]);
     } finally {
       setIsTyping(false);
     }
@@ -125,11 +138,12 @@ const AIChat: React.FC<AIChatProps> = ({ aiAutopilot }) => {
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-[12px] leading-relaxed shadow-sm ${
                   m.role === 'user' ? 'bg-gray-900 text-white rounded-tr-none' : 
-                  m.role === 'error' ? 'bg-red-50 text-red-600 rounded-tl-none' :
+                  m.role === 'error' ? 'bg-red-50 text-red-600 rounded-tl-none border border-red-100' :
                   m.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 italic rounded-tl-none' :
                   'glass text-gray-800 rounded-tl-none border-gray-100'
                 }`}>
-                  {m.text}
+                   {m.role === 'error' && <CloudOff size={10} className="mb-1" />}
+                   {m.text}
                 </div>
               </div>
             ))}
