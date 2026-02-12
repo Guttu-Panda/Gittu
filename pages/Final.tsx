@@ -67,8 +67,8 @@ const Final: React.FC = () => {
         </p>
 
         <div className="pt-8">
-          <p className="text-xs text-gray-400 tracking-[0.4em] uppercase font-bold mb-4">
-            Happy Promise Day, Megh ☁️
+          <p className="text-xs text-gray-400 tracking-[0.2em] uppercase font-bold mb-6 max-w-sm mx-auto leading-relaxed">
+            I'm always with you if I'm not there. Love you, Megh &lt;3
           </p>
           <div className="flex justify-center gap-4 text-pink-200">
              <Heart size={14} fill="currentColor" />

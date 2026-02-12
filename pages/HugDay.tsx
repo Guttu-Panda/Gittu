@@ -30,21 +30,25 @@ const HugDay: React.FC = () => {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const whisperSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
+  // A list of cute cloud-themed or soft hug GIFs
+  const hugGifs = [
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpueG56Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Z3B3Jm09Zw/PHZ7v9tfQu0o0/giphy.gif",
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHNwd29yeGdzbmJidmJidmJidmJidmJidmJidmJidmJidmJidmJidmJm09Zw/3M4NpbLCTxBqU/giphy.gif"
+  ];
+  const selectedGif = useRef(hugGifs[Math.floor(Math.random() * hugGifs.length)]);
+
   const startHug = async () => {
     if (isCompleted) return;
     setIsPressing(true);
     
-    // 1. Immersive Haptic (Double Heartbeat Pulse)
     if ("vibrate" in navigator) {
       heartbeatRef.current = window.setInterval(() => {
         navigator.vibrate([40, 100, 40, 500]);
       }, 800);
     }
 
-    // 2. Soft Whisper Audio (Puck Voice)
     triggerWhisper();
 
-    // 3. Progress Fill
     timerRef.current = window.setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -66,7 +70,7 @@ const HugDay: React.FC = () => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: "Softly say: I'm here for you, Megh. Feel the warmth." }] }],
+        contents: [{ parts: [{ text: "Softly say: I'm right here with you, Megh. Feel the warmth of this hug." }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -87,7 +91,7 @@ const HugDay: React.FC = () => {
         
         const gainNode = audioCtxRef.current.createGain();
         gainNode.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.5, audioCtxRef.current.currentTime + 0.5);
+        gainNode.gain.linearRampToValueAtTime(0.4, audioCtxRef.current.currentTime + 0.5);
         
         source.connect(gainNode);
         gainNode.connect(audioCtxRef.current.destination);
@@ -115,12 +119,22 @@ const HugDay: React.FC = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     
-    confetti({
-      particleCount: 200,
-      spread: 90,
-      origin: { y: 0.6 },
-      colors: ['#FFC0CB', '#FFB6C1', '#F08080', '#FED7AA']
-    });
+    const count = 200;
+    const defaults = { origin: { y: 0.7 } };
+
+    function fire(particleRatio: number, opts: any) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio)
+      });
+    }
+
+    fire(0.25, { spread: 26, startVelocity: 55 });
+    fire(0.2, { spread: 60 });
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+    fire(0.1, { spread: 120, startVelocity: 45 });
 
     fetchHugNote();
   };
@@ -143,7 +157,6 @@ const HugDay: React.FC = () => {
 
   return (
     <div className={`flex flex-col items-center justify-center min-h-[85vh] px-6 text-center py-12 relative transition-all duration-700 ${isPressing ? 'scale-[0.98]' : 'scale-100'}`}>
-      {/* Warmth Radiance Overlay */}
       <div className={`fixed inset-0 transition-opacity duration-1000 pointer-events-none z-[-1] ${isPressing ? 'opacity-100' : 'opacity-0'}`}
            style={{ background: 'radial-gradient(circle at center, #fff7ed 0%, transparent 70%)' }} />
       
@@ -159,74 +172,82 @@ const HugDay: React.FC = () => {
         </p>
       </div>
 
-      <div className="relative mb-16 select-none group">
-        {/* Progress Halo */}
-        <div className={`absolute inset-[-20px] rounded-full blur-[40px] transition-all duration-700 ${isPressing ? 'bg-orange-200/40 opacity-100 scale-110' : 'opacity-0 scale-90'}`} />
-        
-        <svg className="w-64 h-64 md:w-80 md:h-80 transform -rotate-90 relative z-10">
-          <circle cx="50%" cy="50%" r="48%" fill="none" stroke="#f3f4f6" strokeWidth="2" />
-          <circle
-            cx="50%" cy="50%" r="48%"
-            fill="none"
-            stroke={isCompleted ? "#f472b6" : "#fb923c"}
-            strokeWidth="4"
-            strokeDasharray="100%"
-            strokeDashoffset={`${100 - progress}%`}
-            className="transition-all duration-100 ease-linear"
-            strokeLinecap="round"
-          />
-        </svg>
+      {!isCompleted ? (
+        <div className="relative mb-16 select-none group">
+          <div className={`absolute inset-[-20px] rounded-full blur-[40px] transition-all duration-700 ${isPressing ? 'bg-orange-200/40 opacity-100 scale-110' : 'opacity-0 scale-90'}`} />
+          
+          <svg className="w-64 h-64 md:w-80 md:h-80 transform -rotate-90 relative z-10">
+            <circle cx="50%" cy="50%" r="48%" fill="none" stroke="#f3f4f6" strokeWidth="2" />
+            <circle
+              cx="50%" cy="50%" r="48%"
+              fill="none"
+              stroke="#fb923c"
+              strokeWidth="4"
+              strokeDasharray="100%"
+              strokeDashoffset={`${100 - progress}%`}
+              className="transition-all duration-100 ease-linear"
+              strokeLinecap="round"
+            />
+          </svg>
 
-        {/* The Heart Core */}
-        <div 
-          onMouseDown={startHug}
-          onMouseUp={stopHug}
-          onMouseLeave={stopHug}
-          onTouchStart={startHug}
-          onTouchEnd={stopHug}
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-60 md:h-60 rounded-full flex flex-col items-center justify-center transition-all duration-500 cursor-pointer shadow-2xl z-20
-            ${isPressing ? 'scale-[1.1] bg-white ring-8 ring-orange-50' : 'scale-100 bg-white hover:shadow-pink-100'}
-            ${isCompleted ? 'bg-pink-50 ring-0' : ''}
-          `}
-        >
-          <div className={`transition-all duration-500 ${isPressing ? 'animate-pulse' : ''}`}>
-             <Heart 
-               size={isPressing ? 80 : 64} 
-               className={`transition-all duration-500 ${isCompleted || isPressing ? 'text-pink-500 fill-pink-500' : 'text-pink-100'}`} 
-             />
-          </div>
-          <div className="mt-4 flex flex-col items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-              {isCompleted ? 'Held Tight' : isPressing ? 'Squeezing...' : 'Long Press'}
-            </span>
-            {isPressing && <Volume2 size={12} className="text-orange-400 animate-bounce" />}
-          </div>
-        </div>
-
-        {isPressing && Array.from({ length: 6 }).map((_, i) => (
-            <div 
-                key={i} 
-                className="absolute text-pink-300 opacity-50 animate-ping pointer-events-none"
-                style={{
-                    top: `${20 + Math.random() * 60}%`,
-                    left: `${20 + Math.random() * 60}%`,
-                    animationDuration: `${1 + Math.random() * 2}s`
-                }}
-            >
-              <Heart size={16} fill="currentColor" />
+          <div 
+            onMouseDown={startHug}
+            onMouseUp={stopHug}
+            onMouseLeave={stopHug}
+            onTouchStart={startHug}
+            onTouchEnd={stopHug}
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-60 md:h-60 rounded-full flex flex-col items-center justify-center transition-all duration-500 cursor-pointer shadow-2xl z-20
+              ${isPressing ? 'scale-[1.1] bg-white ring-8 ring-orange-50' : 'scale-100 bg-white hover:shadow-pink-100'}
+            `}
+          >
+            <div className={`transition-all duration-500 ${isPressing ? 'animate-pulse' : ''}`}>
+               <Heart 
+                 size={isPressing ? 80 : 64} 
+                 className={`transition-all duration-500 ${isPressing ? 'text-pink-500 fill-pink-500' : 'text-pink-100'}`} 
+               />
             </div>
-        ))}
-      </div>
+            <div className="mt-4 flex flex-col items-center gap-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                {isPressing ? 'Squeezing...' : 'Long Press To Hug'}
+              </span>
+              {isPressing && <Volume2 size={12} className="text-orange-400 animate-bounce" />}
+            </div>
+          </div>
 
-      {isCompleted && (
-        <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-12 duration-1000">
-            {loadingNote ? (
+          {isPressing && Array.from({ length: 6 }).map((_, i) => (
+              <div 
+                  key={i} 
+                  className="absolute text-pink-300 opacity-50 animate-ping pointer-events-none"
+                  style={{
+                      top: `${20 + Math.random() * 60}%`,
+                      left: `${20 + Math.random() * 60}%`,
+                      animationDuration: `${1 + Math.random() * 2}s`
+                  }}
+              >
+                <Heart size={16} fill="currentColor" />
+              </div>
+          ))}
+        </div>
+      ) : (
+        <div className="w-full max-w-lg mx-auto flex flex-col items-center mb-16 animate-in zoom-in fade-in duration-1000">
+           {/* Hug GIF Container */}
+           <div className="w-full max-w-[300px] aspect-square rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl relative mb-12 rotate-[-2deg] bg-white group hover:rotate-2 transition-transform duration-500">
+              <img 
+                src={selectedGif.current} 
+                alt="Hug Animation" 
+                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" 
+              />
+              <div className="absolute inset-0 bg-pink-100/10 pointer-events-none"></div>
+              <Heart className="absolute bottom-4 right-4 text-pink-500 fill-pink-500 w-8 h-8 animate-pulse" />
+           </div>
+
+           {loadingNote ? (
                 <div className="flex items-center gap-4 text-gray-300 text-xs justify-center py-8">
                     <Loader2 className="animate-spin" size={16} />
                     <span className="tracking-[0.3em] uppercase font-bold">Summoning a hug note...</span>
                 </div>
             ) : hugNote && (
-                <div className="glass p-10 rounded-[3.5rem] relative overflow-hidden group shadow-2xl ring-1 ring-pink-50">
+                <div className="glass p-10 rounded-[3.5rem] relative overflow-hidden group shadow-2xl ring-1 ring-pink-50 w-full">
                     <div className="absolute -top-4 -right-4 p-8 opacity-5">
                         <Sparkles size={60} className="text-pink-500" />
                     </div>
