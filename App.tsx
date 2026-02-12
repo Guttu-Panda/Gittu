@@ -47,7 +47,7 @@ const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string, isDa
       {particles.slice(0, count).map((p, i) => (
         <div
           key={i}
-          className={`absolute text-2xl transition-all duration-1000 ease-in-out ${superMode ? 'opacity-40 scale-125' : 'opacity-20'}`}
+          className={`absolute text-xl transition-all duration-1000 ease-in-out ${superMode ? 'opacity-40 scale-110' : 'opacity-20'}`}
           style={{
             top: `${p.top}%`,
             left: `${p.left}%`,
@@ -56,20 +56,6 @@ const FloatingBackground: React.FC<{ superMode: boolean, globalVFX: string, isDa
           }}
         >
           {emojis[p.emojiIdx % emojis.length]}
-        </div>
-      ))}
-      {(superMode || globalVFX === 'hearts') && Array.from({ length: 20 }).map((_, i) => (
-        <div
-          key={`heart-${i}`}
-          className="absolute text-pink-400 opacity-30 animate-heart-rain"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${2 + Math.random() * 3}s`,
-            animationDelay: `${Math.random() * 5}s`,
-            fontSize: `${10 + Math.random() * 25}px`
-          }}
-        >
-          ❤️
         </div>
       ))}
     </div>
@@ -105,12 +91,10 @@ const App: React.FC = () => {
     { id: 'final', component: <Final isDarkMode={isDarkMode} /> }
   ], [isDarkMode]);
 
-  // Handle Theme Persistence
   useEffect(() => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  // Check AI Health
   useEffect(() => {
     const checkAI = async () => {
       if (window.aistudio) {
@@ -140,12 +124,10 @@ const App: React.FC = () => {
       const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') await ctx.resume();
       if (oscillatorRef.current) return;
-
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(440, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 10);
       gain.gain.setValueAtTime(0, ctx.currentTime);
       gain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 2);
       osc.connect(gain);
@@ -153,9 +135,7 @@ const App: React.FC = () => {
       osc.start();
       oscillatorRef.current = osc;
       gainRef.current = gain;
-    } catch (err) {
-      console.warn("Audio start failed.");
-    }
+    } catch (err) { console.warn("Audio start failed."); }
   };
 
   const stopAudio = () => {
@@ -173,9 +153,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isMuted) startAudio();
     else stopAudio();
-    return () => {
-        try { oscillatorRef.current?.stop(); } catch(e) {}
-    };
+    return () => { try { oscillatorRef.current?.stop(); } catch(e) {} };
   }, [isMuted]);
 
   const changePage = (newIdx: number) => {
@@ -186,42 +164,30 @@ const App: React.FC = () => {
       setIsTransitioning(false);
       const content = document.querySelector('.page-content');
       if (content) content.scrollTop = 0;
-    }, 500);
+    }, 400);
   };
 
   return (
     <div className={`page-deck transition-colors duration-1000 ${isDarkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-[#fdfcfb] text-gray-900'}`}>
       <FloatingBackground superMode={superMode} globalVFX={globalVFX} isDarkMode={isDarkMode} />
 
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-1 z-[80] flex gap-1 px-6 pt-6">
+      {/* Tighter Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 z-[80] flex gap-0.5 px-4 pt-4">
         {sections.map((_, i) => (
-          <div key={i} onClick={() => changePage(i)} className="flex-1 h-full cursor-pointer relative group">
-            <div className={`h-full rounded-full transition-all duration-700 ${i <= activeIdx ? (superMode ? 'bg-pink-400' : (isDarkMode ? 'bg-indigo-400' : 'bg-pink-300')) : (isDarkMode ? 'bg-slate-800' : 'bg-gray-100/30')} shadow-sm`} />
+          <div key={i} onClick={() => changePage(i)} className="flex-1 h-full cursor-pointer relative">
+            <div className={`h-full rounded-full transition-all duration-700 ${i <= activeIdx ? (isDarkMode ? 'bg-indigo-400' : 'bg-pink-300') : (isDarkMode ? 'bg-slate-800' : 'bg-gray-100/30')}`} />
           </div>
         ))}
       </div>
 
-      {/* Connection Indicator & Controls */}
-      <div className="fixed top-8 left-8 z-[90] flex items-center gap-3">
-        <div onClick={() => setShowAdmin(true)} className="cursor-pointer group flex items-center gap-2">
-          <div className="relative">
-            <Cloud className={`w-8 h-8 transition-all duration-500 ${superMode ? 'text-pink-400' : (isDarkMode ? 'text-indigo-400' : 'text-blue-200')}`} />
-            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${aiOnline ? 'bg-green-400' : 'bg-red-400'}`} />
-          </div>
+      {/* Compact Controls */}
+      <div className="fixed top-6 left-6 z-[90] flex items-center gap-2">
+        <div onClick={() => setShowAdmin(true)} className="cursor-pointer group flex items-center gap-1.5">
+          <Cloud className={`w-6 h-6 transition-all duration-500 ${isDarkMode ? 'text-indigo-400' : 'text-blue-200'}`} />
+          <div className={`w-2 h-2 rounded-full ${aiOnline ? 'bg-green-400' : 'bg-red-400'}`} />
         </div>
-        
-        {!aiOnline && (
-          <button 
-            onClick={handleConnectCloud}
-            className="glass px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest text-pink-500 dark:text-indigo-400 animate-pulse hover:bg-pink-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
-          >
-            Connect Cloud
-          </button>
-        )}
-
-        <button onClick={() => setIsMuted(!isMuted)} className="glass p-2.5 rounded-full text-gray-400 hover:text-pink-500 dark:hover:text-indigo-400 transition-all active:scale-75 shadow-sm">
-          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+        <button onClick={() => setIsMuted(!isMuted)} className="glass p-2 rounded-full text-gray-400 shadow-sm active:scale-75">
+          {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
         </button>
       </div>
 
@@ -231,25 +197,25 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Controls */}
-      <div className="fixed bottom-10 left-0 w-full z-[90] flex items-center justify-between px-8 pointer-events-none">
-        <button onClick={() => changePage(activeIdx - 1)} disabled={activeIdx === 0 || isTransitioning} className={`glass p-4 rounded-full text-gray-400 hover:text-pink-500 dark:hover:text-indigo-400 transition-all active:scale-75 pointer-events-auto disabled:opacity-0 ${activeIdx === 0 ? 'invisible' : 'visible'}`}>
-          <ChevronLeft size={20} />
+      {/* Navigation Controls - Compact */}
+      <div className="fixed bottom-6 left-0 w-full z-[90] flex items-center justify-between px-6 pointer-events-none">
+        <button onClick={() => changePage(activeIdx - 1)} disabled={activeIdx === 0 || isTransitioning} className={`glass p-3 rounded-full text-gray-400 pointer-events-auto disabled:opacity-0 ${activeIdx === 0 ? 'invisible' : 'visible'}`}>
+          <ChevronLeft size={18} />
         </button>
         <div className="flex flex-col items-center">
-            <div className="glass px-4 py-1.5 rounded-full mb-4 pointer-events-auto">
-                <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400 dark:text-slate-500">Section {activeIdx + 1}</span>
+            <div className="glass px-3 py-1 rounded-full mb-3 pointer-events-auto">
+                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500">{activeIdx + 1}/{sections.length}</span>
             </div>
             {activeIdx < sections.length - 1 && (
-                <button onClick={() => changePage(activeIdx + 1)} className={`p-2.5 rounded-full shadow-2xl hover:scale-105 active:scale-90 transition-all pointer-events-auto flex items-center gap-2 pr-4 group ${isDarkMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-gray-950 hover:bg-black text-white'}`}>
-                    <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
-                        <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                <button onClick={() => changePage(activeIdx + 1)} className={`p-1.5 rounded-full shadow-xl pointer-events-auto flex items-center gap-2 pr-3 group ${isDarkMode ? 'bg-indigo-600 text-white' : 'bg-gray-950 text-white'}`}>
+                    <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center">
+                        <ChevronRight size={14} />
                     </div>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Continue</span>
+                    <span className="text-[8px] font-bold uppercase tracking-[0.1em]">Next</span>
                 </button>
             )}
         </div>
-        <div className="w-[48px]" />
+        <div className="w-[44px]" />
       </div>
 
       <AIChat aiAutopilot={aiAutopilot} />
