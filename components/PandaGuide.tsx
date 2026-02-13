@@ -15,7 +15,7 @@ const PandaGuide: React.FC<PandaGuideProps> = ({ activeIdx, isDarkMode, onToggle
   const messages = [
     "Welcome to your cloud! Scroll to explore our memories! 🐼✨",
     "Look at how far we've come since June! Tap the cards! 🐼🐾",
-    "Hold the heart for a squeeze! It vibrates like a real hug! 🐼🫂",
+    "Kiss Day is here! Tap the big lips to send some magic! 🐼💋",
     "Pinky promises are forever! Tap to see why I made them. 🐼💖",
     "I wrote these just for you. Click 'Hear Note' to listen! 🐼💌",
     "A special poem written just for our 10th June... 🐼📖",

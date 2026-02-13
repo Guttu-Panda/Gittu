@@ -6,7 +6,7 @@ import Journey from './pages/Journey.tsx';
 import Promises from './pages/Promises.tsx';
 import Letters from './pages/Letters.tsx';
 import PoemPage from './pages/PoemPage.tsx';
-import HugDay from './pages/HugDay.tsx';
+import KissDay from './pages/KissDay.tsx';
 import Fun from './pages/Fun.tsx';
 import Gallery from './pages/Gallery.tsx';
 import Final from './pages/Final.tsx';
@@ -82,7 +82,7 @@ const App: React.FC = () => {
   const sections = useMemo(() => [
     { id: 'home', component: <Hero isDarkMode={isDarkMode} /> },
     { id: 'journey', component: <Journey isDarkMode={isDarkMode} /> },
-    { id: 'hug', component: <HugDay isDarkMode={isDarkMode} /> },
+    { id: 'kiss', component: <KissDay isDarkMode={isDarkMode} /> },
     { id: 'promises', component: <Promises isDarkMode={isDarkMode} /> },
     { id: 'letters', component: <Letters isDarkMode={isDarkMode} /> },
     { id: 'poem', component: <PoemPage isDarkMode={isDarkMode} /> },
@@ -119,7 +119,7 @@ const App: React.FC = () => {
   const startAudio = async () => {
     try {
       if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       }
       const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') await ctx.resume();
@@ -171,7 +171,6 @@ const App: React.FC = () => {
     <div className={`page-deck transition-colors duration-1000 ${isDarkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-[#fdfcfb] text-gray-900'}`}>
       <FloatingBackground superMode={superMode} globalVFX={globalVFX} isDarkMode={isDarkMode} />
 
-      {/* Tighter Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 z-[80] flex gap-0.5 px-4 pt-4">
         {sections.map((_, i) => (
           <div key={i} onClick={() => changePage(i)} className="flex-1 h-full cursor-pointer relative">
@@ -180,7 +179,6 @@ const App: React.FC = () => {
         ))}
       </div>
 
-      {/* Compact Controls */}
       <div className="fixed top-6 left-6 z-[90] flex items-center gap-2">
         <div onClick={() => setShowAdmin(true)} className="cursor-pointer group flex items-center gap-1.5">
           <Cloud className={`w-6 h-6 transition-all duration-500 ${isDarkMode ? 'text-indigo-400' : 'text-blue-200'}`} />
@@ -197,7 +195,6 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Controls - Compact */}
       <div className="fixed bottom-6 left-0 w-full z-[90] flex items-center justify-between px-6 pointer-events-none">
         <button onClick={() => changePage(activeIdx - 1)} disabled={activeIdx === 0 || isTransitioning} className={`glass p-3 rounded-full text-gray-400 pointer-events-auto disabled:opacity-0 ${activeIdx === 0 ? 'invisible' : 'visible'}`}>
           <ChevronLeft size={18} />
